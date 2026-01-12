@@ -35,11 +35,9 @@ public class AuthService : IAuthService
         ArgumentNullException.ThrowIfNull(request);
 
         _logger.LogDebug("CreateUserAsync called for mail {Mail}", request.Mail);
-        
-        var existingUser = await _authRepository
-            .GetUserByMailAsync(request.Mail, cancellationToken)
-            .ConfigureAwait(false);
 
+        var existingUser = await _authRepository
+            .GetUserByMailAsync(request.Mail, cancellationToken);
         if (existingUser is not null)
         {
             _logger.LogInformation("Attempt to create existing user {Mail}", request.Mail);
@@ -47,15 +45,12 @@ public class AuthService : IAuthService
         }
 
         var passwordHash = await _passwordHash
-            .HashPasswordAsync(request.Password, cancellationToken)
-            .ConfigureAwait(false);
+            .HashPasswordAsync(request.Password, cancellationToken);
 
         var user = User.Create(request.Name, request.Mail, passwordHash, request.PhoneNumber ?? "N/A");
 
         await _authRepository
-            .CreateUserAsync(user, cancellationToken)
-            .ConfigureAwait(false);
-
+            .CreateUserAsync(user, cancellationToken);
         _logger.LogInformation("User created {UserId} for mail {Mail}", user.Id, request.Mail);
         
         return _mapper.Map<CreateUserResponseDTO>(user);
@@ -67,9 +62,7 @@ public class AuthService : IAuthService
             throw new ArgumentException("Id must be a non-empty GUID.", nameof(id));
 
         var user = await _authRepository
-            .GetUserByIdAsync(id, cancellationToken)
-            .ConfigureAwait(false);
-        
+            .GetUserByIdAsync(id, cancellationToken);
         return user is null ? null : _mapper.Map<CreateUserResponseDTO>(user);
     }
 
@@ -82,11 +75,9 @@ public class AuthService : IAuthService
             throw new ArgumentException("Password must not be empty.", nameof(request.Password));
         
         _logger.LogDebug("LoginAsync called for mail {Mail}", request.Mail);
-        
-        var user = await _authRepository
-            .GetUserByMailAsync(request.Mail, cancellationToken)
-            .ConfigureAwait(false);
 
+        var user = await _authRepository
+            .GetUserByMailAsync(request.Mail, cancellationToken);
         if (user is null)
         {
             _logger.LogWarning("Attempt to login non-existing user {Mail}", request.Mail);
@@ -94,9 +85,7 @@ public class AuthService : IAuthService
         }
 
         var isPasswordValid = await _passwordHash
-            .VerifyPasswordAsync(user.PasswordHash, request.Password, cancellationToken)
-            .ConfigureAwait(false);
-
+            .VerifyPasswordAsync(user.PasswordHash, request.Password, cancellationToken);
         if (!isPasswordValid)
         {
             _logger.LogWarning("Invalid password attempt for user {UserId}", user.Id);
@@ -107,7 +96,6 @@ public class AuthService : IAuthService
         var refreshTokenValue = _jwtProvider.GenerateRefreshToken();
         
         TimeSpan validityPeriod = TimeSpan.FromDays(_options.RefreshTokenExpireDays);
-        _logger.LogWarning("VALIDATY PERIOD: {ValidityPeriod}", validityPeriod);
         var refreshTokenEntity = RefreshToken.Create(refreshTokenValue, user.Id, validityPeriod);
         
         await _rfRepository.AddRFAsync(refreshTokenEntity, cancellationToken);

@@ -31,8 +31,7 @@ public class AuthRepository : IAuthRepository
             throw new ArgumentException("Id must be a non-empty GUID.", nameof(id));
         
         cancellationToken.ThrowIfCancellationRequested();
-        return await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken)
-            .ConfigureAwait(false);
+        return await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
     public async Task<User?> GetUserByMailAsync(string mail, CancellationToken cancellationToken = default)
@@ -45,7 +44,6 @@ public class AuthRepository : IAuthRepository
         cancellationToken.ThrowIfCancellationRequested();
         return await _dbContext.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Mail.ToLower() == normalized, cancellationToken)
-            .ConfigureAwait(false);
+            .FirstOrDefaultAsync(u => u.Mail.ToLower() == normalized, cancellationToken);
     }
 }

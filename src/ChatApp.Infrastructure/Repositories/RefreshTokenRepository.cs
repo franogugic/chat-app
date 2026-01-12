@@ -17,11 +17,10 @@ public class RefreshTokenRepository : IRefreshTokenRepository
     public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         return await _dbContext.RefreshTokens
             .Include(u => u.User)
-            .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken )
-            .ConfigureAwait(false);
+            .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
     }
     
     public async Task AddRFAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default)
