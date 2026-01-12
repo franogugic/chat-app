@@ -1,0 +1,3 @@
+namespace ChatApp.Application.DTO_s;
+
+public record AuthResponseDTO(string AccessToken, string RefreshToken);
