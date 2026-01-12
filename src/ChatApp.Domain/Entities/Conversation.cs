@@ -3,7 +3,7 @@ namespace ChatApp.Domain.Entities;
 public class Conversation
 {
     public Guid Id { get; private set; }
-    public string Title { get; private set; } = string.Empty;
+    public string? Title { get; private set; }
     public bool IsGroup { get; private set; }
     public DateTime CreatedAt { get; private set; }
     
@@ -21,7 +21,7 @@ public class Conversation
         {
             Id = Guid.NewGuid(),
             LastMessageId = null,
-            Title = isGroup ? title! : string.Empty,
+            Title = isGroup ? title! : null,
             IsGroup = isGroup,
             CreatedAt = DateTime.UtcNow
         };

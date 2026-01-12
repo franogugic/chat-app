@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
         if (request is null)
             return BadRequest(new { message = "Request body is required." });
 
-        var created = await _authService.CreateUserAsync(request, cancellationToken).ConfigureAwait(false);
+        var created = await _authService.CreateUserAsync(request, cancellationToken);
 
         return CreatedAtAction(nameof(GetUserById), new { id = created.Id }, created);
     }
@@ -41,8 +41,8 @@ public class AuthController : ControllerBase
         var userIdFromToken = User.FindFirst("id")?.Value;
         if (userIdFromToken != id.ToString())
             return Forbid();
-        
-        var user = await _authService.GetUserByIdAsync(id, cancellationToken).ConfigureAwait(false);
+
+        var user = await _authService.GetUserByIdAsync(id, cancellationToken);
 
         if (user is null)
             return NotFound();
@@ -54,8 +54,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LoginUser([FromBody] LoginUserRequestDTO request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        
-        var authResponse = await _authService.LoginAsync(request, cancellationToken).ConfigureAwait(false);
+
+        var authResponse = await _authService.LoginAsync(request, cancellationToken);
         
         return Ok(authResponse);
     }
