@@ -7,9 +7,12 @@ public class User
     public string Mail { get; private set; } = null!;
     public string PasswordHash { get; private set; } = null!;
     public string PhoneNumber { get; private set; }
-    public TimeSpan CreatedAt { get; private set; }
+    public DateTime CreatedAt { get; private set; }
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+    public ICollection<Message> Messages { get; set; } = new List<Message>();
+    public ICollection<ConversationParticipant> ConversationParticipants { get; set; } = new List<ConversationParticipant>();
+    
     private User() { }
 
     public static User Create(String name, String mail, String passwordHash, String phoneNumber)
@@ -30,7 +33,7 @@ public class User
             Mail = mail, 
             PasswordHash = passwordHash,
             PhoneNumber = phoneNumber,
-            CreatedAt = DateTime.UtcNow.TimeOfDay
+            CreatedAt = DateTime.UtcNow
         };
     }
 }
