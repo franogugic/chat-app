@@ -108,6 +108,6 @@ public class JwtProvider : IJwtProvider
         _logger.LogInformation("Successfully rotated tokens for user {UserId}. New RF expiration: {Expiry}", 
             existingToken.UserId, newRefreshTokenEntity.ExpiryDate);
 
-        return new AuthResponseDTO(newAccessToken, newRefreshTokenEntity.Token);
+        return new AuthResponseDTO(newAccessToken, newRefreshTokenEntity.Token, existingToken.UserId, "content");
     }
 }

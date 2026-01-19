@@ -1,9 +1,13 @@
+using ChatApp.Domain.Enums;
+
 namespace ChatApp.Domain.Entities;
 
 public class Message
 {
     public Guid Id { get; private set; }
     public string Content { get; private set; } = string.Empty;
+    
+    public MessageType Type { get; private set; } = MessageType.text;
     public DateTime SentAt { get; private set; }
     public bool IsRead { get; private set; } 
     public DateTime? ReadAt { get; private set; } 
@@ -16,7 +20,7 @@ public class Message
     
     private Message() { }
 
-    public static Message Create(Guid senderId, Guid conversationId, string content)
+    public static Message Create(Guid senderId, Guid conversationId, string content, MessageType type = MessageType.text)
     {
         return new Message
         {
@@ -24,6 +28,7 @@ public class Message
             SenderId = senderId,
             ConversationId = conversationId,
             Content = content,
+            Type = type,
             SentAt = DateTime.UtcNow,
             IsRead = false,
             ReadAt = null
