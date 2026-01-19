@@ -103,6 +103,6 @@ public class AuthService : IAuthService
         
         _logger.LogInformation("User {UserId} logged in {refreshTokenEntity}", user.Id, refreshTokenEntity.Token);
         
-        return new AuthResponseDTO(token, refreshTokenValue);
+        return new AuthResponseDTO(token, refreshTokenValue, user.Id, user.Name);
     }
 }

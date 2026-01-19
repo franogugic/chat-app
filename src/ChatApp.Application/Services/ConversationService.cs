@@ -1,30 +1,48 @@
+using AutoMapper;
+using ChatApp.Application.DTO_s;
 using ChatApp.Application.Interfaces;
 using ChatApp.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace ChatApp.Application.Services;
 
 public class ConversationService : IConversationService
 {
     private readonly IConversationRepository _conversationRepository;
+    private readonly IMapper _mapper;
+    private readonly ILogger<ConversationService> _logger;
     
-    public ConversationService(IConversationRepository conversationRepository)
+    public ConversationService(IConversationRepository conversationRepository, IMapper mapper, ILogger<ConversationService> logger)
     {
         _conversationRepository = conversationRepository ?? throw new ArgumentNullException(nameof(conversationRepository));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
-    public async Task<Conversation?> GetPrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
+    public async Task<ConversationDto?> GetPrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
     {
-        return await _conversationRepository.GetPrivateConversationAsync(userId1, userId2, cancellationToken);
+        _logger.LogInformation("Fetching private conversation between {UserId1} and {UserId2}", userId1, userId2);
+        
+        var conversation = await _conversationRepository.GetPrivateConversationAsync(userId1, userId2, cancellationToken);
+        return _mapper.Map<ConversationDto>(conversation);
     }
     
-    public async Task<Conversation> CreatePrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
+    public async Task<ConversationDto?> CreatePrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
     {
         var conversation = Conversation.Create(null, false);
         conversation.AddParticipant(userId1);
         conversation.AddParticipant(userId2);
 
-        var createdConversation = await _conversationRepository.AddAsync(conversation, cancellationToken);
+        var persistedConversation = await _conversationRepository.AddAsync(conversation, cancellationToken);
         
-        return createdConversation;
+        if (persistedConversation is null)
+        {
+            _logger.LogError("Failed to persist conversation to the database.");
+            throw new InvalidOperationException("Conversation could not be created.");
+        }
+        
+        
+        var conversationWithDetails = await _conversationRepository.GetConversationByIdAsync(persistedConversation.Id, cancellationToken);
+        return _mapper.Map<ConversationDto>(conversationWithDetails);
     }
 }
