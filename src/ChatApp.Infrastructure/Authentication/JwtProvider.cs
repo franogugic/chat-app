@@ -40,7 +40,6 @@ public class JwtProvider : IJwtProvider
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         
-        // Ovdje koristimo npr. 15-60 minuta za Access Token (podesi u JwtOptions ako želiš)
         var token = new JwtSecurityToken(
                 _options.Issuer,    
                 _options.Audience,
