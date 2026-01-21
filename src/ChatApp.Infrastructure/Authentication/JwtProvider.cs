@@ -28,8 +28,6 @@ public class JwtProvider : IJwtProvider
 
     public string Generate(User user)
     {
-        _logger.LogInformation("Generating Access Token for user: {Email}", user.Mail);
-
         var claims = new Claim[]
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
@@ -40,7 +38,6 @@ public class JwtProvider : IJwtProvider
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         
-        // Ovdje koristimo npr. 15-60 minuta za Access Token (podesi u JwtOptions ako želiš)
         var token = new JwtSecurityToken(
                 _options.Issuer,    
                 _options.Audience,
@@ -58,33 +55,27 @@ public class JwtProvider : IJwtProvider
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
     
-    public async Task<AuthResponseDTO> RefreshToken(string token, CancellationToken cancellationToken = default)
+    public async Task<AuthResponseDTO> RefreshToken(string accessToken, string refreshToken, CancellationToken cancellationToken = default)
     {
-        if(string.IsNullOrWhiteSpace(token))
+        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
         {
-            _logger.LogWarning("Refresh attempt with empty token.");
-            throw new ArgumentException("Token is required", nameof(token));
+            throw new ArgumentException("Both tokens are required.");
         }
 
-        _logger.LogInformation("Attempting to refresh token...");
+        var principal = GetPrincipalFromExpiredToken(accessToken);
+        var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                          ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        var existingToken = await _rfRepository.GetByTokenAsync(token, cancellationToken);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new RefreshTokenIsNotValidException();
+        }
+
+        var existingToken = await _rfRepository.GetByTokenAsync(refreshToken, cancellationToken);
         
-        if(existingToken is null) 
+        if (existingToken is null || existingToken.UserId != userId || existingToken.IsRevoked || existingToken.IsExpired) 
         {
-            _logger.LogWarning("Refresh failed: Token does not exist in database.");
-            throw new RefreshTokenIsNotValidException();
-        }
-
-        if (existingToken.IsRevoked)
-        {
-            _logger.LogCritical("SECURITY ALERT: Attempted reuse of REVOKED token by user {UserId}!", existingToken.UserId);
-            throw new RefreshTokenIsNotValidException();
-        }
-
-        if (existingToken.IsExpired)
-        {
-            _logger.LogWarning("Refresh failed: Token for user {UserId} has expired on {ExpiryDate}.", existingToken.UserId, existingToken.ExpiryDate);
+            _logger.LogWarning("Invalid refresh attempt for user {UserId}.", userId);
             throw new RefreshTokenIsNotValidException();
         }
 
@@ -93,21 +84,37 @@ public class JwtProvider : IJwtProvider
         var newAccessToken = Generate(existingToken.User);
         var newRefreshToken = GenerateRefreshToken();
         
-        TimeSpan validityPeriod = TimeSpan.FromDays(_options.RefreshTokenExpireDays);
-        _logger.LogWarning("VALIDATY PERIOD: {ValidityPeriod}", validityPeriod);
-        
         var newRefreshTokenEntity = Domain.Entities.RefreshToken.Create(
             newRefreshToken, 
             existingToken.UserId, 
-            validityPeriod);
+            TimeSpan.FromDays(_options.RefreshTokenExpireDays));
         
         await _rfRepository.AddRFAsync(newRefreshTokenEntity, cancellationToken);
-        
         await _rfRepository.SaveChangesAsync(cancellationToken);
-        
-        _logger.LogInformation("Successfully rotated tokens for user {UserId}. New RF expiration: {Expiry}", 
-            existingToken.UserId, newRefreshTokenEntity.ExpiryDate);
 
-        return new AuthResponseDTO(newAccessToken, newRefreshTokenEntity.Token, existingToken.UserId, "content");
+        return new AuthResponseDTO(newAccessToken, newRefreshTokenEntity.Token, existingToken.UserId, existingToken.User.Name, existingToken.User.Mail);
+    }
+
+    private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+    {
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false, 
+            ValidateIssuer = false,   
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key)),
+            ValidateLifetime = false
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+
+        if (securityToken is not JwtSecurityToken jwtSecurityToken || 
+            !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+        {
+            throw new SecurityTokenException("Invalid token algorithm");
+        }
+
+        return principal;
     }
 }

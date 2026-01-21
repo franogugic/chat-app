@@ -69,20 +69,91 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LoginUser([FromBody] LoginUserRequestDTO request, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Login([FromBody] LoginUserRequestDTO request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        _logger.LogInformation("LoginUser: authentication attempt.");
-        
-        var authResponse = await _authService.LoginAsync(request, cancellationToken);
-        
-        if (authResponse is null)
+        var user = await _authService.LoginAsync(request, cancellationToken);
+
+        if (user == null)
         {
-            _logger.LogWarning("LoginUser: authentication failed.");
-            return Unauthorized();
+            return Unauthorized(new { message = "Invalid credentials" });
         }
         
-        _logger.LogInformation("LoginUser: authentication succeeded.");
-        return Ok(authResponse);
+        Response.Cookies.Append("access-token", user.AccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false, 
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTime.UtcNow.AddHours(1)
+        });
+
+        return Ok(new
+        {
+            Id = user.UserId,
+            Name = user.name,
+            Mail = user.mail
+        });
+    }
+    
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken = default)
+    {
+        var userIdFromToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                              ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdFromToken))
+        {
+            _logger.LogWarning("GetCurrentUser: Nije pronađen 'sub' ili 'id' claim u tokenu.");
+            return Unauthorized(new { message = "Invalid token" });
+        }
+
+        if (!Guid.TryParse(userIdFromToken, out var userId))
+        {
+            _logger.LogWarning("GetCurrentUser: ID korisnika u tokenu nije ispravan GUID: {UserId}", userIdFromToken);
+            return BadRequest(new { message = "Invalid user ID format" });
+        }
+
+        var user = await _authService.GetUserByIdAsync(userId, cancellationToken);
+
+        if (user == null)
+        {
+            _logger.LogWarning("GetCurrentUser: Korisnik s ID-em {UserId} više ne postoji u bazi.", userId);
+            return NotFound(new { message = "User not found" });
+        }
+
+        return Ok(new
+        {
+            Id = user.Id,
+            Name = user.Name, 
+            Mail = user.Mail,   
+            PhoneNumber = user.PhoneNumber,
+            CreatedAt = user.CreatedAt
+        });
+    }
+    
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("access-token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax
+        });
+
+        return Ok();
+    }
+    
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDTO request, CancellationToken ct)
+    {
+        var result = await _authService.RefreshTokenAsync(request, ct);
+
+        if (result is null)
+        {
+            return Unauthorized("Session expired. Please login again.");
+        }
+
+        return Ok(result);
     }
 }
