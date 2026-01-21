@@ -103,6 +103,17 @@ public class AuthService : IAuthService
         
         _logger.LogInformation("User {UserId} logged in {refreshTokenEntity}", user.Id, refreshTokenEntity.Token);
         
-        return new AuthResponseDTO(token, refreshTokenValue, user.Id, user.Name);
+        return new AuthResponseDTO(token, refreshTokenValue, user.Id, user.Name, user.Mail);
+    }
+    
+    public async Task<AuthResponseDTO?> RefreshTokenAsync(RefreshRequestDTO request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return null;
+        }
+        
+        return await _jwtProvider.RefreshToken(request.AccessToken, request.RefreshToken, cancellationToken);
+            
     }
 }

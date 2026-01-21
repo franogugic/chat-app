@@ -8,5 +8,5 @@ public interface IJwtProvider
     string Generate(User user);
     string GenerateRefreshToken();
     
-    Task<AuthResponseDTO> RefreshToken(string token, CancellationToken cancellationToken = default);
+    Task<AuthResponseDTO> RefreshToken(string accessToken, string refreshToken, CancellationToken cancellationToken = default);
 }
