@@ -150,7 +150,13 @@ public class AuthController : ControllerBase
             Secure = false,
             SameSite = SameSiteMode.Lax
         });
-
+        
+        Response.Cookies.Delete("refresh-token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax
+        });
         return Ok();
     }
     

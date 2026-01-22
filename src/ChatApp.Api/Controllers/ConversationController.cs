@@ -66,4 +66,7 @@ public class ConversationController : ControllerBase
         
         return Ok(conversation);
     }
+    
+    // TODO: dodat endpoint za sve konverzacije jednog usera
+    
 }
