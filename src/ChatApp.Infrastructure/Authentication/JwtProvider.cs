@@ -55,46 +55,64 @@ public class JwtProvider : IJwtProvider
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
     
-    public async Task<AuthResponseDTO> RefreshToken(string accessToken, string refreshToken, CancellationToken cancellationToken = default)
+public async Task<AuthResponseDTO> RefreshToken(string accessToken, string refreshToken, CancellationToken cancellationToken = default)
+{
+    if (string.IsNullOrWhiteSpace(refreshToken))
     {
-        if (string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(refreshToken))
-        {
-            throw new ArgumentException("Both tokens are required.");
-        }
-
-        var principal = GetPrincipalFromExpiredToken(accessToken);
-        var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
-                          ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (!Guid.TryParse(userIdClaim, out var userId))
-        {
-            throw new RefreshTokenIsNotValidException();
-        }
-
-        var existingToken = await _rfRepository.GetByTokenAsync(refreshToken, cancellationToken);
-        
-        if (existingToken is null || existingToken.UserId != userId || existingToken.IsRevoked || existingToken.IsExpired) 
-        {
-            _logger.LogWarning("Invalid refresh attempt for user {UserId}.", userId);
-            throw new RefreshTokenIsNotValidException();
-        }
-
-        existingToken.IsRevoked = true;
-        
-        var newAccessToken = Generate(existingToken.User);
-        var newRefreshToken = GenerateRefreshToken();
-        
-        var newRefreshTokenEntity = Domain.Entities.RefreshToken.Create(
-            newRefreshToken, 
-            existingToken.UserId, 
-            TimeSpan.FromDays(_options.RefreshTokenExpireDays));
-        
-        await _rfRepository.AddRFAsync(newRefreshTokenEntity, cancellationToken);
-        await _rfRepository.SaveChangesAsync(cancellationToken);
-
-        return new AuthResponseDTO(newAccessToken, newRefreshTokenEntity.Token, existingToken.UserId, existingToken.User.Name, existingToken.User.Mail);
+        _logger.LogError("Refresh token is missing.");
+        throw new ArgumentException("Refresh token is required.");
     }
 
+    var existingToken = await _rfRepository.GetByTokenAsync(refreshToken, cancellationToken);
+    
+    if (existingToken is null || existingToken.IsRevoked || existingToken.IsExpired) 
+    {
+        _logger.LogWarning("Invalid, revoked or expired refresh token attempt.");
+        throw new RefreshTokenIsNotValidException();
+    }
+
+    if (!string.IsNullOrWhiteSpace(accessToken))
+    {
+        try 
+        {
+            var principal = GetPrincipalFromExpiredToken(accessToken);
+            var userIdFromToken = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                                  ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdFromToken != existingToken.UserId.ToString())
+            {
+                _logger.LogCritical("Security breach attempt: Access token UID mismatch with Refresh token!");
+                throw new RefreshTokenIsNotValidException();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Could not parse expired access token: {Message}", ex.Message);
+        }
+    }
+
+    existingToken.IsRevoked = true;
+    
+    var newAccessToken = Generate(existingToken.User);
+    var newRefreshToken = GenerateRefreshToken();
+    
+    var newRefreshTokenEntity = Domain.Entities.RefreshToken.Create(
+        newRefreshToken, 
+        existingToken.UserId, 
+        TimeSpan.FromDays(_options.RefreshTokenExpireDays));
+    
+    await _rfRepository.AddRFAsync(newRefreshTokenEntity, cancellationToken);
+    await _rfRepository.SaveChangesAsync(cancellationToken);
+
+    _logger.LogInformation("Successfully rotated tokens for user {UserId}.", existingToken.UserId);
+
+    return new AuthResponseDTO(
+        newAccessToken, 
+        newRefreshTokenEntity.Token, 
+        existingToken.UserId, 
+        existingToken.User.Name, 
+        existingToken.User.Mail);
+}
     private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
         var tokenValidationParameters = new TokenValidationParameters
