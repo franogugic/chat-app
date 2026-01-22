@@ -83,7 +83,17 @@ public class AuthController : ControllerBase
             HttpOnly = true,
             Secure = false, 
             SameSite = SameSiteMode.Lax,
-            Expires = DateTime.UtcNow.AddHours(1)
+            Path = "/",
+            Expires = DateTime.UtcNow.AddMinutes(5)
+        });
+        
+        Response.Cookies.Append("refresh-token", user.RefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = DateTime.UtcNow.AddDays(7) 
         });
 
         return Ok(new
@@ -140,19 +150,55 @@ public class AuthController : ControllerBase
             Secure = false,
             SameSite = SameSiteMode.Lax
         });
-
+        
+        Response.Cookies.Delete("refresh-token", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax
+        });
         return Ok();
     }
     
     [HttpPost("refresh-token")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshRequestDTO request, CancellationToken ct)
+    public async Task<IActionResult> Refresh(CancellationToken ct)
     {
+        _logger.LogCritical("PINGAN JE REFRESH TOKEN ENDPOINT");
+        var accessToken = Request.Cookies["access-token"];
+        var refreshToken = Request.Cookies["refresh-token"];
+        
+        var request = new RefreshRequestDTO
+        {
+            AccessToken = accessToken ?? string.Empty,
+            RefreshToken = refreshToken ?? string.Empty
+        };
+        _logger.LogInformation("Refreshing token with request: " + request.RefreshToken);
+        _logger.LogInformation("Access token with request: " + request.AccessToken);
+        
         var result = await _authService.RefreshTokenAsync(request, ct);
 
         if (result is null)
         {
             return Unauthorized("Session expired. Please login again.");
         }
+        
+        Response.Cookies.Append("access-token", result.AccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = DateTime.UtcNow.AddMinutes(5)
+        });
+
+        Response.Cookies.Append("refresh-token", result.RefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = DateTime.UtcNow.AddDays(7)
+        });
 
         return Ok(result);
     }

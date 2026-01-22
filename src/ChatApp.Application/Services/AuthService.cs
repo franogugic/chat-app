@@ -108,12 +108,11 @@ public class AuthService : IAuthService
     
     public async Task<AuthResponseDTO?> RefreshTokenAsync(RefreshRequestDTO request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
         {
             return null;
         }
         
         return await _jwtProvider.RefreshToken(request.AccessToken, request.RefreshToken, cancellationToken);
-            
     }
 }
