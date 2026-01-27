@@ -2,8 +2,7 @@ using ChatApp.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using AutoMapper;
-using ChatApp.Application.DTO_s;
+
 
 namespace ChatApp.Api.Controllers;
 
@@ -56,6 +55,7 @@ public class ConversationController : ControllerBase
             return Unauthorized("User identity not found in token.");
         }
         
+        _logger.LogError(userId1 + " -> U1 ||| U2 -> " + userId2);
         if(userId1 == userId2)
             return BadRequest("Cannot create a private conversation with oneself.");
         
@@ -67,6 +67,26 @@ public class ConversationController : ControllerBase
         return Ok(conversation);
     }
     
-    // TODO: dodat endpoint za sve konverzacije jednog usera
+    
+    [Authorize]
+    [HttpGet("user/conversations")]
+    public async Task<IActionResult> GetUserConversations()
+    {
+        var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                             ?? User.FindFirst("sub")?.Value;
+        
+        if (string.IsNullOrEmpty(nameIdentifier) || !Guid.TryParse(nameIdentifier, out var userId))
+        {
+            return Unauthorized("User identity not found in token.");
+        }
+        
+        var conversations = await _conversationService.GetUserConversationsAsync(userId);
+        
+        return Ok(new
+        {
+            User = userId,
+            Conversations = conversations
+        });
+    }
     
 }

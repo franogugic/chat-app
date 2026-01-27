@@ -7,4 +7,5 @@ public interface IConversationRepository
     Task<Conversation?> GetPrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default);
     Task<Conversation?> GetConversationByIdAsync(Guid conversationId, CancellationToken cancellationToken = default);
     Task<Conversation?> AddAsync(Conversation conversation, CancellationToken cancellationToken = default);
+    Task<List<Conversation?>?> GetUserConversationsAsync(Guid userId, CancellationToken cancellationToken = default);
 }

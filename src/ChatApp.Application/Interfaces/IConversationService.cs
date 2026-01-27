@@ -8,4 +8,7 @@ public interface IConversationService
     Task<ConversationDto?> GetPrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default);
     
     Task<ConversationDto?> CreatePrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default);
+
+    Task<List<UserConversationsResponseDTO>> GetUserConversationsAsync(Guid userId, CancellationToken cancellationToken = default);
+
 }
