@@ -48,6 +48,8 @@ public class ConversationService : IConversationService
     public async Task<List<UserConversationsResponseDTO>> GetUserConversationsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var conversations = await _conversationRepository.GetUserConversationsAsync(userId, cancellationToken);
-        return _mapper.Map<List<UserConversationsResponseDTO>>(conversations);  
-    }
+        return _mapper.Map<List<UserConversationsResponseDTO>>(conversations, opt => 
+        {
+            opt.Items["CurrentUserId"] = userId; 
+        });    }
 }

@@ -22,8 +22,18 @@ public class AuthMappingProfile : Profile
         CreateMap<Message, MessageDTO>();
 
         CreateMap<Conversation, UserConversationsResponseDTO>()
-            .ForMember(dest => dest.Title, opt => opt.MapFrom(src =>
-                src.IsGroup ? src.Title : src.Participants.Select(p => p.User.Name).FirstOrDefault()))
-            .ForMember(dest => dest.LastMessage, opt => opt.MapFrom(src => src.LastMessage));
+            .ForMember(dest => dest.Title, opt => opt.MapFrom((src, dest, destMember, context) => 
+            {
+                if (src.IsGroup) 
+                    return src.Title;
+
+                if (context.Items.TryGetValue("CurrentUserId", out var userIdObj) && userIdObj is Guid currentUserId)
+                {
+                    return src.Participants
+                        .FirstOrDefault(p => p.UserId != currentUserId)?.User?.Name ?? "Unknown User";
+                }
+
+                return src.Title ?? "Chat";
+            }));        
     }
 }
