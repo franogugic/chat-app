@@ -2,16 +2,19 @@ using ChatApp.Application.Interfaces;
 using ChatApp.Domain.Entities;
 using ChatApp.Infrastructure.Db;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ChatApp.Infrastructure.Repositories;
 
 public class ConversationRepository : IConversationRepository
 {
     public readonly AppDbContext _dbContext;
+    public readonly ILogger<ConversationRepository> _logger;
     
-    public ConversationRepository(AppDbContext dbContext)
+    public ConversationRepository(AppDbContext dbContext, ILogger<ConversationRepository> logger)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     
     public async Task<Conversation?> GetPrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
@@ -44,5 +47,21 @@ public class ConversationRepository : IConversationRepository
         await _dbContext.AddAsync(conversation, cancellationToken);
         await  _dbContext.SaveChangesAsync(cancellationToken);
         return conversation;
+    }
+
+    public async Task<List<Conversation?>?> GetUserConversationsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var conversations = await _dbContext.Conversations
+            .Include(c => c.Participants)
+                .ThenInclude(u => u.User)
+            .Include(c => c.LastMessage)
+            .Where(c => c.Participants.Any(p => p.UserId == userId))
+            .OrderByDescending(c => c.LastMessage != null ? c.LastMessage.SentAt : c.CreatedAt) 
+            .ToListAsync(cancellationToken);
+        
+        _logger.LogWarning("COnveresations:" + conversations );
+        
+        return conversations;
+        
     }
 }

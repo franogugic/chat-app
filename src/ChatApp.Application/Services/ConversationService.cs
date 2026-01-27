@@ -41,8 +41,13 @@ public class ConversationService : IConversationService
             throw new InvalidOperationException("Conversation could not be created.");
         }
         
-        
         var conversationWithDetails = await _conversationRepository.GetConversationByIdAsync(persistedConversation.Id, cancellationToken);
         return _mapper.Map<ConversationDto>(conversationWithDetails);
+    }
+    
+    public async Task<List<UserConversationsResponseDTO>> GetUserConversationsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var conversations = await _conversationRepository.GetUserConversationsAsync(userId, cancellationToken);
+        return _mapper.Map<List<UserConversationsResponseDTO>>(conversations);  
     }
 }
