@@ -34,6 +34,8 @@ public class ConversationController : ControllerBase
         
         var conversation = await _conversationService.GetPrivateConversationAsync(userId1, userId2);
         
+        _logger.LogInformation("Conversation between {UserId1} and {UserId2} found: {Conversation}", userId1, userId2, conversation);
+        
         if (conversation is null)
             return Ok(null);
         
