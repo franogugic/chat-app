@@ -18,7 +18,8 @@ public class AuthMappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.User.Name));
 
         CreateMap<Conversation, ConversationDto>()
-            .ForMember(dest => dest.Participants, opt => opt.MapFrom(src => src.Participants));
+            .ForMember(dest => dest.Participants, opt => opt.MapFrom(src => src.Participants))
+            .ForMember(dest => dest.Messages, opt => opt.MapFrom(src => src.Messages));
 
         CreateMap<Message, MessageDTO>();
 

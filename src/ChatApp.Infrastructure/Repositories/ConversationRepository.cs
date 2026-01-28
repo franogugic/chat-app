@@ -24,6 +24,7 @@ public class ConversationRepository : IConversationRepository
         var conversation = await _dbContext.Conversations
             .Include(c => c.Participants)
                 .ThenInclude(u => u.User)
+            .Include(m => m.Messages)
             .FirstOrDefaultAsync( c =>
                 !c.IsGroup &&
                 c.Participants.Count == 2 &&

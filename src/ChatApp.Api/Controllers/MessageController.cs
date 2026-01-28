@@ -37,7 +37,6 @@ public class MessageController : ControllerBase
         var senderId = Guid.Parse(nameIdentifier); 
         _logger.LogInformation("SenderId from token: {SenderId}", senderId);
         
-        
         return Ok(senderId); 
     }
     

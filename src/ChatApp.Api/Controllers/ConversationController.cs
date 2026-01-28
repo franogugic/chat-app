@@ -34,6 +34,8 @@ public class ConversationController : ControllerBase
         
         var conversation = await _conversationService.GetPrivateConversationAsync(userId1, userId2);
         
+        _logger.LogInformation("Conversation between {UserId1} and {UserId2} found: {Conversation}", userId1, userId2, conversation);
+        
         if (conversation is null)
             return Ok(null);
         
@@ -55,7 +57,6 @@ public class ConversationController : ControllerBase
             return Unauthorized("User identity not found in token.");
         }
         
-        _logger.LogError(userId1 + " -> U1 ||| U2 -> " + userId2);
         if(userId1 == userId2)
             return BadRequest("Cannot create a private conversation with oneself.");
         

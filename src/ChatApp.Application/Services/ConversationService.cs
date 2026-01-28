@@ -24,6 +24,14 @@ public class ConversationService : IConversationService
         _logger.LogInformation("Fetching private conversation between {UserId1} and {UserId2}", userId1, userId2);
         
         var conversation = await _conversationRepository.GetPrivateConversationAsync(userId1, userId2, cancellationToken);
+        if (conversation is null)
+        {
+            _logger.LogInformation("No private conversation found between {UserId1} and {UserId2} BY USER ID", userId1, userId2);
+            conversation = await _conversationRepository.GetConversationByIdAsync(userId2, cancellationToken);
+        }
+        
+        _logger.LogInformation("Private conversation fetched: {Conversation}", conversation);
+        
         return _mapper.Map<ConversationDto>(conversation);
     }
     

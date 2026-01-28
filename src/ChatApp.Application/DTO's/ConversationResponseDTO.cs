@@ -7,6 +7,7 @@ public class ConversationDto
     public bool IsGroup { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<ParticipantDto> Participants { get; set; } = new();
+    public List<MessageDTO> Messages { get; set; } = new();
 }
 
 public class ParticipantDto
