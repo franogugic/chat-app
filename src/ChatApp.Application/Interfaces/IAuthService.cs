@@ -10,5 +10,6 @@ public interface IAuthService
     
     Task<AuthResponseDTO> LoginAsync(LoginUserRequestDTO request, CancellationToken cancellationToken = default);
     Task<AuthResponseDTO?> RefreshTokenAsync(RefreshRequestDTO request, CancellationToken cancellationToken = default);
+    Task<List<AllUsersBySearchResponseDTO>> GetAllUsersBySearchAsync(string searchTerm, CancellationToken cancellationToken = default);
 
 }

@@ -141,6 +141,20 @@ public class AuthController : ControllerBase
         });
     }
     
+    [Authorize]
+    [HttpGet("search")]
+    public async Task<ActionResult<List<AllUsersBySearchResponseDTO>>> GetAllUsersBySearch([FromQuery] string searchTerm, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 2)
+        {
+            return Ok(new List<AllUsersBySearchResponseDTO>()); 
+        }
+    
+        var users = await _authService.GetAllUsersBySearchAsync(searchTerm, cancellationToken);
+
+        return users;
+    }
+    
     [HttpPost("logout")]
     public IActionResult Logout()
     {

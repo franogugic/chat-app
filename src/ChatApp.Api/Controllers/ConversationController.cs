@@ -81,11 +81,7 @@ public class ConversationController : ControllerBase
         
         var conversations = await _conversationService.GetUserConversationsAsync(userId);
         
-        return Ok(new
-        {
-            User = userId,
-            Conversations = conversations
-        });
+        return Ok(conversations);
     }
     
 }
