@@ -55,7 +55,6 @@ public class ConversationController : ControllerBase
             return Unauthorized("User identity not found in token.");
         }
         
-        _logger.LogError(userId1 + " -> U1 ||| U2 -> " + userId2);
         if(userId1 == userId2)
             return BadRequest("Cannot create a private conversation with oneself.");
         

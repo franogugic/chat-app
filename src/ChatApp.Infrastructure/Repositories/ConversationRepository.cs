@@ -31,6 +31,7 @@ public class ConversationRepository : IConversationRepository
                 c.Participants.Any(p => p.UserId == userId2), cancellationToken
                 );
         
+        _logger.LogInformation("Conversation exist between {UserId1} and {UserId2}: {Exists}", userId1, userId2, conversation is not null);
         return conversation;
     }
     
@@ -58,8 +59,6 @@ public class ConversationRepository : IConversationRepository
             .Where(c => c.Participants.Any(p => p.UserId == userId))
             .OrderByDescending(c => c.LastMessage != null ? c.LastMessage.SentAt : c.CreatedAt) 
             .ToListAsync(cancellationToken);
-        
-        _logger.LogWarning("COnveresations:" + conversations );
         
         return conversations;
         
