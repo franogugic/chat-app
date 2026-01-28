@@ -29,6 +29,13 @@ public class ConversationService : IConversationService
     
     public async Task<ConversationDto?> CreatePrivateConversationAsync(Guid userId1, Guid userId2, CancellationToken cancellationToken = default)
     {
+        var getPrivConv = await GetPrivateConversationAsync(userId1, userId2, cancellationToken);
+        if (getPrivConv is not null)
+        {
+            _logger.LogInformation("!!!Private conversation already exists between {UserId1} and {UserId2}: {exist}", userId1, userId2, getPrivConv is not null);
+            return getPrivConv;
+        }
+        
         var conversation = Conversation.Create(null, false);
         conversation.AddParticipant(userId1);
         conversation.AddParticipant(userId2);
@@ -51,5 +58,6 @@ public class ConversationService : IConversationService
         return _mapper.Map<List<UserConversationsResponseDTO>>(conversations, opt => 
         {
             opt.Items["CurrentUserId"] = userId; 
-        });    }
+        });    
+    }
 }
