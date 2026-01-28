@@ -11,6 +11,7 @@ public class AuthMappingProfile : Profile
     public AuthMappingProfile()
     {
         CreateMap<User, CreateUserResponseDTO>();
+        CreateMap<User, AllUsersBySearchResponseDTO>();
 
         CreateMap<ConversationParticipant, ParticipantDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.User.Id))

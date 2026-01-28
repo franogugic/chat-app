@@ -46,4 +46,13 @@ public class AuthRepository : IAuthRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Mail.ToLower() == normalized, cancellationToken);
     }
+
+    public async Task<List<User>> GetAllUsersBySearchAsync(string searchTerm, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .AsNoTracking() 
+            .Where(u => u.Name.Contains(searchTerm)) 
+            .Take(20)
+            .ToListAsync(cancellationToken);
+    }
 }
