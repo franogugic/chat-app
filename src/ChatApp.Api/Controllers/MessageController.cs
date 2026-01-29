@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using ChatApp.Application.DTO_s;
+using ChatApp.Application.Interfaces;
 using ChatApp.Domain.Entities;
 using ChatApp.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -13,11 +14,12 @@ namespace ChatApp.Api.Controllers;
 public class MessageController : ControllerBase
 {
     private readonly ILogger<MessageController> _logger;
+    private readonly IMessageService _messageService;
     
-    
-    public MessageController(ILogger<MessageController> logger)
+    public MessageController(ILogger<MessageController> logger, IMessageService messageService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     }
 
     [Authorize]
@@ -25,8 +27,7 @@ public class MessageController : ControllerBase
     public async Task<IActionResult> SendMessages([FromBody] SendMessageRequestDTO request)
     {
         _logger.LogInformation("SendMessages called.");
-        
-        if(string.IsNullOrWhiteSpace(request.Content) || request.ConversationId == Guid.Empty)
+        if(string.IsNullOrWhiteSpace(request.Content))
             return new BadRequestResult();
         
         var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -37,7 +38,8 @@ public class MessageController : ControllerBase
         var senderId = Guid.Parse(nameIdentifier); 
         _logger.LogInformation("SenderId from token: {SenderId}", senderId);
         
-        return Ok(senderId); 
+        var message = await _messageService.SendMessage(senderId, request, cancellationToken: default);
+        return Ok(message); 
     }
     
 }

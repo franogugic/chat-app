@@ -24,7 +24,7 @@ public class ConversationRepository : IConversationRepository
         var conversation = await _dbContext.Conversations
             .Include(c => c.Participants)
                 .ThenInclude(u => u.User)
-            .Include(m => m.Messages)
+            .Include(m => m.Messages.OrderBy(mess => mess.SentAt))
             .FirstOrDefaultAsync( c =>
                 !c.IsGroup &&
                 c.Participants.Count == 2 &&
@@ -40,7 +40,7 @@ public class ConversationRepository : IConversationRepository
     {
         return await _dbContext.Conversations.Include(c => c.Participants)
                 .ThenInclude(p => p.User)
-            .Include(c => c.Messages)
+            .Include(m => m.Messages.OrderBy(mess => mess.SentAt))
             .FirstOrDefaultAsync(c => c.Id == conversationId, cancellationToken);    
     }
     
