@@ -5,8 +5,9 @@ namespace ChatApp.Application.DTO_s;
 
 public class SendMessageRequestDTO
 {
-    [Required]
     public Guid ConversationId { get; set; }
+    
+    public Guid RecipientId { get; set; }
     
     [Required]
     public string Content { get; set; } = null!;

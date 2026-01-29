@@ -59,5 +59,6 @@ public class ConversationService : IConversationService
         return _mapper.Map<List<UserConversationsResponseDTO>>(conversations, opt => 
         {
             opt.Items["CurrentUserId"] = userId; 
-        });    }
+        });    
+    }
 }

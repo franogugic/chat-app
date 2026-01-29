@@ -47,11 +47,12 @@ public class AuthRepository : IAuthRepository
             .FirstOrDefaultAsync(u => u.Mail.ToLower() == normalized, cancellationToken);
     }
 
-    public async Task<List<User>> GetAllUsersBySearchAsync(string searchTerm, CancellationToken cancellationToken = default)
+    public async Task<List<User>> GetAllUsersBySearchAsync(Guid userId, string searchTerm, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Users
             .AsNoTracking() 
-            .Where(u => u.Name.Contains(searchTerm)) 
+            .Where(u => u.Name.ToLower().Contains(searchTerm.ToLower()))
+            .Where(u => u.Id != userId)
             .Take(20)
             .ToListAsync(cancellationToken);
     }

@@ -149,8 +149,16 @@ public class AuthController : ControllerBase
         {
             return Ok(new List<AllUsersBySearchResponseDTO>()); 
         }
-    
-        var users = await _authService.GetAllUsersBySearchAsync(searchTerm, cancellationToken);
+        
+        var userIdFromToken = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                              ?? User.FindFirst("sub")?.Value;
+
+        if (!Guid.TryParse(userIdFromToken, out var userId) || string.IsNullOrEmpty(userIdFromToken))
+        {
+            _logger.LogWarning("GetCurrentUser: ID korisnika u tokenu nije ispravan GUID: {UserId}", userIdFromToken);
+            return BadRequest(new { message = "Invalid user ID format" });
+        }    
+        var users = await _authService.GetAllUsersBySearchAsync(userId, searchTerm, cancellationToken);
 
         return users;
     }

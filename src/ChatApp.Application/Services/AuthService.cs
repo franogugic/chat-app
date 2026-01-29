@@ -116,9 +116,9 @@ public class AuthService : IAuthService
         return await _jwtProvider.RefreshToken(request.AccessToken, request.RefreshToken, cancellationToken);
     }
     
-    public async Task<List<AllUsersBySearchResponseDTO>> GetAllUsersBySearchAsync(string searchTerm, CancellationToken cancellationToken = default)
+    public async Task<List<AllUsersBySearchResponseDTO>> GetAllUsersBySearchAsync(Guid userId, string searchTerm, CancellationToken cancellationToken = default)
     {
-        var users = await _authRepository.GetAllUsersBySearchAsync(searchTerm, cancellationToken);
+        var users = await _authRepository.GetAllUsersBySearchAsync(userId, searchTerm, cancellationToken);
 
         if (users == null || !users.Any())
             return new List<AllUsersBySearchResponseDTO>();
