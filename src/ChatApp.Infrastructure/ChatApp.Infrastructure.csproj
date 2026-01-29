@@ -6,10 +6,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="SignalR\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.0.0" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="JWT" Version="11.0.0" />
