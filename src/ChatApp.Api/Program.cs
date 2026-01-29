@@ -6,6 +6,7 @@ using ChatApp.Application.Services;
 using ChatApp.Domain.Entities;
 using ChatApp.Infrastructure.Authentication;
 using ChatApp.Infrastructure.Db;
+using ChatApp.Infrastructure.Hubs;
 using ChatApp.Infrastructure.Repositories;
 using ChatApp.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -51,18 +52,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["access-token"];
+                var accessToken = context.Request.Cookies["access-token"];
+                
+                var path = context.HttpContext.Request.Path;
+                if (string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+                {
+                    accessToken = context.Request.Query["access_token"];
+                }
+
+                context.Token = accessToken;
                 return Task.CompletedTask;
             }
         };
     });
 
 builder.Services.AddScoped<IJwtProvider, JwtProvider>();
-
 builder.Services.AddOpenApi();
-
 builder.Services.AddControllers();
-
 builder.Services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -82,10 +88,10 @@ if (builder.Environment.EnvironmentName != "Testing")
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddLogging();
+
+builder.Services.AddSignalR();
     
 var app = builder.Build();
-
-app.UseCors("AllowFrontend");
 
 if (app.Environment.IsDevelopment())
 {
@@ -94,11 +100,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.MapControllers();
+app.MapHub<ChatHub>("/chatHub"); 
 
 app.Map("/error", (HttpContext http) =>
 {
