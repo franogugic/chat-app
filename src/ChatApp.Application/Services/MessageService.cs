@@ -43,4 +43,11 @@ public class MessageService : IMessageService
             
             var message = await _messageRepository.SendMessage(senderId, request, cancellationToken);
             return _mapper.Map<MessageDTO>(message);
-        }}
+        }
+    
+    public async Task MarkMessagesAsReadAsync(Guid conversationId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        await _messageRepository.MarkMessagesAsReadAsync(conversationId, userId, cancellationToken);
+    }
+    
+}
