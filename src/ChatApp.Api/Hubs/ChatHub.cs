@@ -1,15 +1,15 @@
 using ChatApp.Application.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace ChatApp.Infrastructure.Hubs;
 
 public class ChatHub : Hub
 {
-    private static readonly HashSet<string> OnlineUsers = new HashSet<string>();
+    private static readonly ConcurrentDictionary<string, byte> OnlineUsers = new ConcurrentDictionary<string, byte>();
     private readonly ILogger<ChatHub> _logger;
     private readonly IMessageService _messageService;
-    
     
     public ChatHub(ILogger<ChatHub> logger, IMessageService messageService)
     { 
@@ -23,7 +23,7 @@ public class ChatHub : Hub
         _logger.LogCritical(userId);
         if (userId != null)
         {
-            OnlineUsers.Add(userId);
+            OnlineUsers.TryAdd(userId, 0);
             await Clients.All.SendAsync("UserStatusChanged", userId, true);
         }
         await base.OnConnectedAsync();
@@ -35,7 +35,7 @@ public class ChatHub : Hub
         
         if (userId != null)
         {
-            OnlineUsers.Remove(userId);
+            OnlineUsers.TryRemove(userId, out _);
             await Clients.All.SendAsync("UserStatusChanged", userId, false);
         }
         await base.OnDisconnectedAsync(exception);
@@ -48,12 +48,12 @@ public class ChatHub : Hub
     
     public List<string> GetOnlineUsers()
     {
-        return OnlineUsers.ToList();
+        return OnlineUsers.Keys.ToList();
     }
     
     public bool IsThisUserOnline(string userId)
     {
-        return OnlineUsers.Contains(userId);
+        return OnlineUsers.ContainsKey(userId);
     }
     
     [HubMethodName("MarkAsRead")]
